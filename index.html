@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マークダウン変換アプリ</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>マークダウン変換アプリ</h1>
+            <p>テキストを入力すると、マークダウン形式でプレビュー表示されます</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="section-header">
+                    <h2>入力</h2>
+                </div>
+                <textarea id="input-text" placeholder="ここにテキストを入力してください...
+
+例:
+# 見出し1
+## 見出し2
+### 見出し3
+
+**太字**
+*斜体*
+
+- リスト項目1
+- リスト項目2
+
+1. 番号付きリスト1
+2. 番号付きリスト2
+
+[リンク](https://example.com)
+
+`コード`
+
+```
+コードブロック
+```
+"></textarea>
+            </div>
+
+            <div class="output-section">
+                <div class="section-header">
+                    <h2>プレビュー</h2>
+                    <button id="copy-btn" class="copy-button" title="HTMLをコピー">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        コピー
+                    </button>
+                </div>
+                <div id="output-preview" class="preview-content">
+                    <p class="placeholder">ここにマークダウンのプレビューが表示されます</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>使い方</h3>
+            <ul>
+                <li>左側のテキストエリアにマークダウン記法でテキストを入力してください</li>
+                <li>右側にリアルタイムでプレビューが表示されます</li>
+                <li>「コピー」ボタンをクリックすると、変換されたHTMLをクリップボードにコピーできます</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
