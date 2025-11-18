@@ -75,7 +75,255 @@ function restoreContent() {
 }
 
 // ===========================
-// 2. ファイルのインポート/エクスポート
+// 2. HTMLエクスポート機能
+// ===========================
+
+// HTMLファイルとしてエクスポート
+function exportAsHTML() {
+    const htmlContent = outputPreview.innerHTML;
+
+    // 空のコンテンツチェック
+    if (htmlContent.includes('placeholder') || htmlContent.includes('error') || !htmlContent.trim()) {
+        showNotification('エクスポートする内容がありません', 'error');
+        return;
+    }
+
+    try {
+        // 埋め込み用CSSスタイル
+        const embeddedCSS = `
+/* リセット */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #ffffff;
+    padding: 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* 見出し */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #1a1a1a;
+}
+
+h1 {
+    font-size: 2em;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+h3 {
+    font-size: 1.25em;
+}
+
+/* 段落 */
+p {
+    margin-bottom: 16px;
+}
+
+/* リンク */
+a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* リスト */
+ul, ol {
+    margin-bottom: 16px;
+    padding-left: 2em;
+}
+
+li {
+    margin-bottom: 8px;
+}
+
+/* コード */
+code {
+    background: #f6f8fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+    color: #e74c3c;
+}
+
+pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+}
+
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+}
+
+/* 引用 */
+blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #666;
+    font-style: italic;
+}
+
+/* テーブル */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+table th,
+table td {
+    border: 1px solid #e0e0e0;
+    padding: 12px;
+    text-align: left;
+}
+
+table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 画像 */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+
+/* 水平線 */
+hr {
+    border: none;
+    border-top: 2px solid #e0e0e0;
+    margin: 24px 0;
+}
+
+/* 強調 */
+strong {
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+em {
+    font-style: italic;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    body {
+        padding: 20px 15px;
+    }
+
+    h1 {
+        font-size: 1.75em;
+    }
+
+    h2 {
+        font-size: 1.5em;
+    }
+
+    table {
+        font-size: 14px;
+    }
+
+    table th,
+    table td {
+        padding: 8px;
+    }
+}
+
+/* 印刷用 */
+@media print {
+    body {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    pre {
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+    }
+}
+`;
+
+        // 完全なHTMLドキュメントを作成
+        const fullHTML = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Markdown Converter App v1.3.0">
+    <title>Markdown Document</title>
+    <style>
+${embeddedCSS}
+    </style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+
+        // Blobを作成
+        const blob = new Blob([fullHTML], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+
+        // ファイル名を生成（日時付き）
+        const now = new Date();
+        const dateString = now.toISOString().slice(0, 10);
+        const timeString = now.toTimeString().slice(0, 5).replace(':', '-');
+        const filename = `markdown-${dateString}-${timeString}.html`;
+
+        a.href = url;
+        a.download = filename;
+        a.click();
+
+        URL.revokeObjectURL(url);
+        showNotification(`${filename} をHTMLとして保存しました`, 'success');
+    } catch (error) {
+        showNotification('HTMLエクスポートに失敗しました', 'error');
+        console.error('HTMLエクスポートエラー:', error);
+    }
+}
+
+// ===========================
+// 3. ファイルのインポート/エクスポート
 // ===========================
 
 // 新規作成
@@ -319,6 +567,12 @@ themeToggle.addEventListener('click', toggleTheme);
 newBtn.addEventListener('click', newDocument);
 openBtn.addEventListener('click', openFile);
 saveBtn.addEventListener('click', saveFile);
+
+// HTMLエクスポートボタンの要素を取得
+const exportHtmlBtn = document.getElementById('export-html-btn');
+if (exportHtmlBtn) {
+    exportHtmlBtn.addEventListener('click', exportAsHTML);
+}
 
 // キーボードショートカット
 document.addEventListener('keydown', (e) => {
@@ -655,6 +909,12 @@ document.addEventListener('keydown', (e) => {
         markdownActions['link']();
     }
 
+    // Ctrl/Cmd + E でHTMLエクスポート
+    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        exportAsHTML();
+    }
+
     // Esc キーで通知を閉じる
     if (e.key === 'Escape') {
         const notification = document.querySelector('.notification');
@@ -847,11 +1107,12 @@ function trapFocus(element) {
     });
 }
 
-console.log('✨ マークダウン変換アプリ v1.2.0 起動完了');
+console.log('✨ マークダウン変換アプリ v1.3.0 起動完了');
 console.log('💡 ショートカット:');
 console.log('  Ctrl/Cmd + N: 新規作成');
 console.log('  Ctrl/Cmd + O: ファイルを開く');
 console.log('  Ctrl/Cmd + S: 保存');
+console.log('  Ctrl/Cmd + E: HTMLエクスポート');
 console.log('  Ctrl/Cmd + D: ダークモード切り替え');
 console.log('  Ctrl/Cmd + B: 太字');
 console.log('  Ctrl/Cmd + I: イタリック');
