@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マークダウン変換アプリ</title>
+    <meta name="description" content="マークダウン形式のテキストをリアルタイムでプレビューできる無料のオンラインエディタ">
+    <meta name="keywords" content="markdown, editor, converter, プレビュー, エディタ">
+    <meta name="author" content="Markdown Converter App">
+    <meta name="theme-color" content="#667eea">
+    <title>マークダウン変換アプリ - リアルタイムプレビュー &amp; エディタ</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -36,24 +40,24 @@
             </div>
         </header>
 
-        <div class="toolbar">
+        <div class="toolbar" role="toolbar" aria-label="ドキュメント操作">
             <div class="toolbar-section">
-                <button id="new-btn" class="toolbar-button" title="新規作成">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button id="new-btn" class="toolbar-button" title="新規作成" aria-label="新規ドキュメントを作成">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
                     新規
                 </button>
-                <button id="open-btn" class="toolbar-button" title="ファイルを開く">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button id="open-btn" class="toolbar-button" title="ファイルを開く" aria-label="マークダウンファイルを開く">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                         <polyline points="13 2 13 9 20 9"></polyline>
                     </svg>
                     開く
                 </button>
-                <button id="save-btn" class="toolbar-button" title="保存 (Ctrl+S)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button id="save-btn" class="toolbar-button" title="保存 (Ctrl+S)" aria-label="ファイルとして保存">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                         <polyline points="7 3 7 8 15 8"></polyline>
@@ -62,27 +66,37 @@
                 </button>
             </div>
             <div class="toolbar-section">
-                <span id="last-saved" class="last-saved-text"></span>
+                <span id="last-saved" class="last-saved-text" aria-live="polite"></span>
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="input-section">
+        <!-- モバイル用タブ切り替え -->
+        <div class="mobile-tabs" role="tablist" aria-label="表示モード切り替え">
+            <button id="tab-edit" class="active" role="tab" aria-selected="true" aria-controls="input-section" aria-label="編集モード">
+                ✏️ 編集
+            </button>
+            <button id="tab-preview" role="tab" aria-selected="false" aria-controls="output-section" aria-label="プレビューモード">
+                👁️ プレビュー
+            </button>
+        </div>
+
+        <div class="main-content" role="main">
+            <div id="input-section" class="input-section" role="tabpanel" aria-labelledby="tab-edit">
                 <div class="section-header">
                     <h2>入力</h2>
-                    <div class="stats">
+                    <div class="stats" role="status" aria-label="文書統計">
                         <span class="stat-item">
-                            <strong>文字数:</strong> <span id="char-count">0</span>
+                            <strong>文字数:</strong> <span id="char-count" aria-label="文字数">0</span>
                         </span>
                         <span class="stat-item">
-                            <strong>単語数:</strong> <span id="word-count">0</span>
+                            <strong>単語数:</strong> <span id="word-count" aria-label="単語数">0</span>
                         </span>
                         <span class="stat-item">
-                            <strong>行数:</strong> <span id="line-count">0</span>
+                            <strong>行数:</strong> <span id="line-count" aria-label="行数">0</span>
                         </span>
                     </div>
                 </div>
-                <textarea id="input-text" placeholder="ここにテキストを入力してください...
+                <textarea id="input-text" aria-label="マークダウンテキスト入力エリア" placeholder="ここにテキストを入力してください...
 
 例:
 # 見出し1
@@ -108,18 +122,18 @@
 "></textarea>
             </div>
 
-            <div class="output-section">
+            <div id="output-section" class="output-section" role="tabpanel" aria-labelledby="tab-preview">
                 <div class="section-header">
                     <h2>プレビュー</h2>
-                    <button id="copy-btn" class="copy-button" title="HTMLをコピー">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button id="copy-btn" class="copy-button" title="HTMLをコピー" aria-label="変換されたHTMLをクリップボードにコピー">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                         コピー
                     </button>
                 </div>
-                <div id="output-preview" class="preview-content">
+                <div id="output-preview" class="preview-content" role="region" aria-label="マークダウンプレビュー" aria-live="polite">
                     <p class="placeholder">ここにマークダウンのプレビューが表示されます</p>
                 </div>
             </div>

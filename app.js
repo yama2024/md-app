@@ -343,3 +343,287 @@ function init() {
 
 // アプリ起動
 init();
+
+// ===========================
+// UI/UX拡張機能
+// ===========================
+
+// モバイル用タブ切り替え
+const tabEdit = document.getElementById('tab-edit');
+const tabPreview = document.getElementById('tab-preview');
+const inputSection = document.querySelector('.input-section');
+const outputSection = document.querySelector('.output-section');
+
+if (tabEdit && tabPreview) {
+    tabEdit.addEventListener('click', () => {
+        tabEdit.classList.add('active');
+        tabPreview.classList.remove('active');
+        inputSection.classList.remove('hidden');
+        outputSection.classList.remove('active');
+
+        // アクセシビリティ: ARIA属性を更新
+        tabEdit.setAttribute('aria-selected', 'true');
+        tabPreview.setAttribute('aria-selected', 'false');
+    });
+
+    tabPreview.addEventListener('click', () => {
+        tabPreview.classList.add('active');
+        tabEdit.classList.remove('active');
+        inputSection.classList.add('hidden');
+        outputSection.classList.add('active');
+
+        // アクセシビリティ: ARIA属性を更新
+        tabPreview.setAttribute('aria-selected', 'true');
+        tabEdit.setAttribute('aria-selected', 'false');
+    });
+}
+
+// ドラッグ&ドロップでファイル読み込み
+inputText.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    inputText.classList.add('drag-over');
+});
+
+inputText.addEventListener('dragleave', () => {
+    inputText.classList.remove('drag-over');
+});
+
+inputText.addEventListener('drop', (e) => {
+    e.preventDefault();
+    inputText.classList.remove('drag-over');
+
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'text/markdown' || file.type === 'text/plain' || file.name.endsWith('.md'))) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            inputText.value = event.target.result;
+            convertMarkdown();
+            updateStats();
+            autoSave();
+            showNotification(`${file.name} を読み込みました`, 'success');
+        };
+        reader.readAsText(file);
+    } else {
+        showNotification('マークダウンファイル(.md)またはテキストファイルをドロップしてください', 'error');
+    }
+});
+
+// キーボードナビゲーション強化
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + N で新規作成
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        newDocument();
+    }
+
+    // Ctrl/Cmd + O で開く
+    if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+        e.preventDefault();
+        openFile();
+    }
+
+    // Ctrl/Cmd + D でダークモード切り替え
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        toggleTheme();
+    }
+
+    // Esc キーで通知を閉じる
+    if (e.key === 'Escape') {
+        const notification = document.querySelector('.notification');
+        if (notification) {
+            notification.remove();
+        }
+    }
+});
+
+// スムーズスクロール
+const smoothScroll = () => {
+    const inputScrollPercent = inputText.scrollTop / (inputText.scrollHeight - inputText.clientHeight);
+    const targetScrollTop = inputScrollPercent * (outputPreview.scrollHeight - outputPreview.clientHeight);
+
+    outputPreview.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+    });
+};
+
+// スクロール同期（オプショナル - パフォーマンスのため制限）
+let scrollTimeout;
+inputText.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(smoothScroll, 100);
+});
+
+// 保存状態の視覚化
+let saveIndicator;
+function showSaveStatus(status) {
+    // 既存のインジケーターを削除
+    if (saveIndicator) {
+        saveIndicator.remove();
+    }
+
+    // 新しいインジケーターを作成
+    saveIndicator = document.createElement('span');
+    saveIndicator.className = `save-status ${status}`;
+
+    if (status === 'saving') {
+        saveIndicator.innerHTML = '💾 保存中...';
+    } else if (status === 'saved') {
+        saveIndicator.innerHTML = '✓ 保存済み';
+    } else if (status === 'error') {
+        saveIndicator.innerHTML = '⚠ 保存失敗';
+    }
+
+    const lastSavedElement = document.getElementById('last-saved');
+    if (lastSavedElement) {
+        lastSavedElement.innerHTML = '';
+        lastSavedElement.appendChild(saveIndicator);
+
+        // 3秒後に最終保存時刻表示に戻す
+        if (status === 'saved') {
+            setTimeout(() => {
+                const lastSaved = localStorage.getItem(LAST_SAVED_KEY);
+                if (lastSaved) {
+                    const date = new Date(lastSaved);
+                    updateLastSavedText(date);
+                }
+            }, 3000);
+        }
+    }
+}
+
+// 自動保存機能を拡張（状態表示付き）
+const originalAutoSave = autoSave;
+autoSave = function() {
+    showSaveStatus('saving');
+
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, inputText.value);
+            const now = new Date();
+            localStorage.setItem(LAST_SAVED_KEY, now.toISOString());
+            showSaveStatus('saved');
+        } catch (error) {
+            console.error('自動保存エラー:', error);
+            showSaveStatus('error');
+        }
+    }, 1000);
+};
+
+// 空の状態チェック
+function checkEmptyState() {
+    if (inputText.value.trim() === '') {
+        outputPreview.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-title">マークダウンを入力してください</div>
+                <div class="empty-state-description">
+                    左側のエディタにマークダウン形式でテキストを入力すると、
+                    ここにリアルタイムでプレビューが表示されます。
+                </div>
+            </div>
+        `;
+    }
+}
+
+// 初期表示で空の状態をチェック
+checkEmptyState();
+
+// ツールチップの追加（データ属性を使用）
+const buttonsWithTooltips = [
+    { id: 'new-btn', tooltip: '新規作成 (Ctrl+N)' },
+    { id: 'open-btn', tooltip: 'ファイルを開く (Ctrl+O)' },
+    { id: 'save-btn', tooltip: '保存 (Ctrl+S)' },
+    { id: 'theme-toggle', tooltip: 'テーマ切り替え (Ctrl+D)' },
+    { id: 'copy-btn', tooltip: 'HTMLをコピー' }
+];
+
+buttonsWithTooltips.forEach(btn => {
+    const element = document.getElementById(btn.id);
+    if (element) {
+        element.setAttribute('data-tooltip', btn.tooltip);
+        element.classList.add('tooltip');
+    }
+});
+
+// パフォーマンス監視
+const performanceObserver = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+        if (entry.duration > 100) {
+            console.warn(`パフォーマンス警告: ${entry.name} took ${entry.duration}ms`);
+        }
+    }
+});
+
+try {
+    performanceObserver.observe({ entryTypes: ['measure'] });
+} catch (e) {
+    // PerformanceObserver not supported
+}
+
+// エラーハンドリングの改善
+window.addEventListener('error', (e) => {
+    console.error('グローバルエラー:', e.error);
+    showNotification('予期しないエラーが発生しました', 'error');
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Promise rejection:', e.reason);
+    showNotification('処理中にエラーが発生しました', 'error');
+});
+
+// ページ離脱時の確認（未保存の変更がある場合）
+let hasUnsavedChanges = false;
+
+inputText.addEventListener('input', () => {
+    hasUnsavedChanges = true;
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && hasUnsavedChanges) {
+        // バックグラウンドに移行する際に保存
+        localStorage.setItem(STORAGE_KEY, inputText.value);
+        localStorage.setItem(LAST_SAVED_KEY, new Date().toISOString());
+    }
+});
+
+// サービスワーカーの登録準備（PWA対応の準備）
+if ('serviceWorker' in navigator) {
+    // 将来的にPWA対応する際のための準備
+    console.log('Service Worker サポート: 利用可能');
+}
+
+// アクセシビリティ: フォーカストラップ
+function trapFocus(element) {
+    const focusableElements = element.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    element.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            if (e.shiftKey) {
+                if (document.activeElement === firstFocusable) {
+                    e.preventDefault();
+                    lastFocusable.focus();
+                }
+            } else {
+                if (document.activeElement === lastFocusable) {
+                    e.preventDefault();
+                    firstFocusable.focus();
+                }
+            }
+        }
+    });
+}
+
+console.log('✨ マークダウン変換アプリ v1.1.0 起動完了');
+console.log('💡 ショートカット:');
+console.log('  Ctrl/Cmd + N: 新規作成');
+console.log('  Ctrl/Cmd + O: ファイルを開く');
+console.log('  Ctrl/Cmd + S: 保存');
+console.log('  Ctrl/Cmd + D: ダークモード切り替え');
+console.log('  Esc: 通知を閉じる');
