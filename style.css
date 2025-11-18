@@ -235,6 +235,84 @@ header p {
     font-weight: 700;
 }
 
+/* Markdownツールバー */
+.markdown-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 15px;
+    background: var(--bg-section);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    transition: background 0.3s ease;
+}
+
+.markdown-toolbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.markdown-toolbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.markdown-toolbar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.markdown-toolbar::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color);
+}
+
+.md-tool-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 6px 8px;
+    background: var(--bg-container);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.md-tool-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+.md-tool-btn:active {
+    transform: scale(0.95);
+}
+
+.md-tool-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+
+.md-tool-text {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.md-toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
 /* 入力エリア */
 #input-text {
     flex: 1;

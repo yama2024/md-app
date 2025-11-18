@@ -330,6 +330,215 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ===========================
+// Markdownツールバー機能
+// ===========================
+
+// テキストを選択範囲または カーソル位置に挿入する共通関数
+function insertMarkdown(before, after = '', placeholder = '') {
+    const start = inputText.selectionStart;
+    const end = inputText.selectionEnd;
+    const selectedText = inputText.value.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+
+    // 新しいテキストを作成
+    const newText = before + textToInsert + after;
+
+    // テキストを挿入
+    inputText.value = inputText.value.substring(0, start) + newText + inputText.value.substring(end);
+
+    // カーソル位置を設定
+    if (selectedText) {
+        // テキストが選択されていた場合、挿入後のテキストを選択
+        inputText.selectionStart = start;
+        inputText.selectionEnd = start + newText.length;
+    } else {
+        // テキストが選択されていなかった場合、プレースホルダーを選択
+        inputText.selectionStart = start + before.length;
+        inputText.selectionEnd = start + before.length + textToInsert.length;
+    }
+
+    // フォーカスを戻す
+    inputText.focus();
+
+    // 変換を実行
+    convertMarkdown();
+    updateStats();
+    autoSave();
+}
+
+// 行頭に記号を挿入する関数（見出し、リスト、引用用）
+function insertLinePrefix(prefix) {
+    const start = inputText.selectionStart;
+    const end = inputText.selectionEnd;
+    const value = inputText.value;
+
+    // 現在の行の開始位置を見つける
+    let lineStart = start;
+    while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+        lineStart--;
+    }
+
+    // 現在の行の終了位置を見つける
+    let lineEnd = end;
+    while (lineEnd < value.length && value[lineEnd] !== '\n') {
+        lineEnd++;
+    }
+
+    // 選択範囲が複数行にまたがるか確認
+    const selectedLines = value.substring(lineStart, lineEnd).split('\n');
+
+    // 各行にプレフィックスを追加
+    const newLines = selectedLines.map(line => {
+        // 既にプレフィックスがある場合は除去（トグル動作）
+        if (line.startsWith(prefix)) {
+            return line.substring(prefix.length);
+        } else {
+            return prefix + line;
+        }
+    });
+
+    const newText = newLines.join('\n');
+
+    // テキストを置換
+    inputText.value = value.substring(0, lineStart) + newText + value.substring(lineEnd);
+
+    // カーソル位置を設定
+    inputText.selectionStart = lineStart;
+    inputText.selectionEnd = lineStart + newText.length;
+    inputText.focus();
+
+    convertMarkdown();
+    updateStats();
+    autoSave();
+}
+
+// Markdownアクション定義
+const markdownActions = {
+    'bold': () => insertMarkdown('**', '**', '太字テキスト'),
+    'italic': () => insertMarkdown('*', '*', 'イタリックテキスト'),
+    'strikethrough': () => insertMarkdown('~~', '~~', '打ち消し線'),
+    'heading1': () => insertLinePrefix('# '),
+    'heading2': () => insertLinePrefix('## '),
+    'heading3': () => insertLinePrefix('### '),
+    'link': () => {
+        const start = inputText.selectionStart;
+        const end = inputText.selectionEnd;
+        const selectedText = inputText.value.substring(start, end);
+        const linkText = selectedText || 'リンクテキスト';
+        insertMarkdown('[', '](https://example.com)', linkText === selectedText ? linkText : 'リンクテキスト');
+    },
+    'image': () => {
+        insertMarkdown('![', '](https://example.com/image.jpg)', '画像の説明');
+    },
+    'code-block': () => {
+        const start = inputText.selectionStart;
+        const value = inputText.value;
+        // 行頭に移動
+        let lineStart = start;
+        while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+            lineStart--;
+        }
+        inputText.selectionStart = lineStart;
+        inputText.selectionEnd = lineStart;
+        insertMarkdown('```\n', '\n```', 'コード');
+    },
+    'inline-code': () => insertMarkdown('`', '`', 'code'),
+    'ul': () => insertLinePrefix('- '),
+    'ol': () => {
+        const start = inputText.selectionStart;
+        const end = inputText.selectionEnd;
+        const value = inputText.value;
+
+        // 現在の行の開始位置を見つける
+        let lineStart = start;
+        while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+            lineStart--;
+        }
+
+        // 現在の行の終了位置を見つける
+        let lineEnd = end;
+        while (lineEnd < value.length && value[lineEnd] !== '\n') {
+            lineEnd++;
+        }
+
+        const selectedLines = value.substring(lineStart, lineEnd).split('\n');
+        const newLines = selectedLines.map((line, index) => {
+            // 既に番号がある場合は除去（トグル動作）
+            if (/^\d+\.\s/.test(line)) {
+                return line.replace(/^\d+\.\s/, '');
+            } else {
+                return `${index + 1}. ${line}`;
+            }
+        });
+
+        const newText = newLines.join('\n');
+        inputText.value = value.substring(0, lineStart) + newText + value.substring(lineEnd);
+        inputText.selectionStart = lineStart;
+        inputText.selectionEnd = lineStart + newText.length;
+        inputText.focus();
+
+        convertMarkdown();
+        updateStats();
+        autoSave();
+    },
+    'quote': () => insertLinePrefix('> '),
+    'hr': () => {
+        const start = inputText.selectionStart;
+        const value = inputText.value;
+        // 現在の行の開始位置に移動
+        let lineStart = start;
+        while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+            lineStart--;
+        }
+
+        // 行頭に水平線を挿入
+        const before = value.substring(0, lineStart);
+        const after = value.substring(lineStart);
+        const hrText = (before && !before.endsWith('\n') ? '\n' : '') + '---\n\n';
+
+        inputText.value = before + hrText + after;
+        inputText.selectionStart = lineStart + hrText.length;
+        inputText.selectionEnd = lineStart + hrText.length;
+        inputText.focus();
+
+        convertMarkdown();
+        updateStats();
+        autoSave();
+    },
+    'table': () => {
+        const tableTemplate = '\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 行1 | データ | データ |\n| 行2 | データ | データ |\n\n';
+        const start = inputText.selectionStart;
+        const value = inputText.value;
+
+        // 行頭に移動
+        let lineStart = start;
+        while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+            lineStart--;
+        }
+
+        inputText.value = value.substring(0, lineStart) + tableTemplate + value.substring(lineStart);
+        inputText.selectionStart = lineStart + 1;
+        inputText.selectionEnd = lineStart + tableTemplate.length - 2;
+        inputText.focus();
+
+        convertMarkdown();
+        updateStats();
+        autoSave();
+    }
+};
+
+// ツールバーボタンにイベントリスナーを追加
+document.querySelectorAll('.md-tool-btn').forEach(button => {
+    button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const action = button.getAttribute('data-action');
+        if (markdownActions[action]) {
+            markdownActions[action]();
+        }
+    });
+});
+
+// ===========================
 // 初期化
 // ===========================
 
@@ -426,6 +635,24 @@ document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
         toggleTheme();
+    }
+
+    // Ctrl/Cmd + B で太字
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        markdownActions['bold']();
+    }
+
+    // Ctrl/Cmd + I でイタリック
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        markdownActions['italic']();
+    }
+
+    // Ctrl/Cmd + K でリンク挿入
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        markdownActions['link']();
     }
 
     // Esc キーで通知を閉じる
@@ -620,10 +847,13 @@ function trapFocus(element) {
     });
 }
 
-console.log('✨ マークダウン変換アプリ v1.1.0 起動完了');
+console.log('✨ マークダウン変換アプリ v1.2.0 起動完了');
 console.log('💡 ショートカット:');
 console.log('  Ctrl/Cmd + N: 新規作成');
 console.log('  Ctrl/Cmd + O: ファイルを開く');
 console.log('  Ctrl/Cmd + S: 保存');
 console.log('  Ctrl/Cmd + D: ダークモード切り替え');
+console.log('  Ctrl/Cmd + B: 太字');
+console.log('  Ctrl/Cmd + I: イタリック');
+console.log('  Ctrl/Cmd + K: リンク挿入');
 console.log('  Esc: 通知を閉じる');
